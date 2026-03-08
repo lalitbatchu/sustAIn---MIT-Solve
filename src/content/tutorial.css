@@ -1,0 +1,271 @@
+.eco-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.eco-tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.eco-tutorial-backdrop--compress-step {
+  background: transparent;
+}
+
+.eco-tutorial-card {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(450px, calc(100vw - 32px));
+  max-width: 450px;
+  padding: 32px;
+  border-radius: 16px;
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: #a3a3a3;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  pointer-events: auto;
+  transition: all 0.5s ease-in-out;
+}
+
+.eco-tutorial-card-compress-step {
+  top: 30px;
+  right: 30px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: min(350px, calc(100vw - 24px));
+  max-width: 350px;
+}
+
+.eco-tutorial-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 1.2;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.eco-tutorial-success-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.eco-tutorial-success-icon svg {
+  width: 64px;
+  height: 64px;
+}
+
+.eco-tutorial-success-circle,
+.eco-tutorial-success-check {
+  fill: none;
+  stroke: #22c55e;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.eco-tutorial-success-circle {
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: eco-draw-circle 450ms ease forwards;
+}
+
+.eco-tutorial-success-check {
+  stroke-dasharray: 35;
+  stroke-dashoffset: 35;
+  animation: eco-draw-check 350ms ease forwards 450ms;
+}
+
+.eco-tutorial-body {
+  margin: 14px 0 0;
+  color: #d4d4d4;
+  font-size: 15px;
+  line-height: 1.5;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
+}
+
+.eco-tutorial-body-strong {
+  color: #ffffff;
+}
+
+.eco-tutorial-body-strong strong {
+  font-weight: 700;
+}
+
+.eco-tutorial-toolbar-hint {
+  position: fixed;
+  top: 10px;
+  right: 80px;
+  z-index: 2147483650;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid #22c55e;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.eco-tutorial-toolbar-text {
+  font-family: "Inter", sans-serif;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.eco-tutorial-stats-preview {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.eco-tutorial-preview-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.eco-tutorial-preview-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 7px 10px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eco-tutorial-preview-pill-value {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.eco-tutorial-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.eco-tutorial-preview-card {
+  display: grid;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px;
+}
+
+.eco-tutorial-preview-card-label {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eco-tutorial-preview-card-value {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.eco-tutorial-actions {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eco-tutorial-btn {
+  border: 0;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+}
+
+.eco-tutorial-btn-primary {
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: #22c55e;
+  color: #000000;
+  font-weight: 500;
+  transition: filter 150ms ease;
+}
+
+.eco-tutorial-btn-primary:hover {
+  filter: brightness(0.94);
+}
+
+.eco-tutorial-btn-secondary {
+  background: transparent;
+  color: #a3a3a3;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.eco-tutorial-btn-secondary:hover {
+  text-decoration: underline;
+}
+
+.eco-tutorial-highlight {
+  z-index: 2147483650 !important;
+  pointer-events: auto !important;
+  isolation: isolate;
+}
+
+@keyframes eco-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes eco-draw-circle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes eco-draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
