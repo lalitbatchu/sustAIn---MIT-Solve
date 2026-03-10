@@ -36,15 +36,42 @@ type ActiveRequest = {
 };
 
 const BACKGROUND_TARGET = "compression-background";
+const KEEPALIVE_INTERVAL_MS = 15000;
 
 let modelWorker: Worker | null = null;
 const activeRequests = new Map<number, ActiveRequest>();
+let keepaliveTimer: number | null = null;
 
 function postToBackground(message: Record<string, unknown>) {
   void chrome.runtime.sendMessage({
     target: BACKGROUND_TARGET,
     ...message
   });
+}
+
+function syncKeepaliveTimer() {
+  if (activeRequests.size === 0) {
+    if (keepaliveTimer !== null) {
+      self.clearInterval(keepaliveTimer);
+      keepaliveTimer = null;
+    }
+    return;
+  }
+
+  if (keepaliveTimer !== null) {
+    return;
+  }
+
+  keepaliveTimer = self.setInterval(() => {
+    if (activeRequests.size === 0) {
+      syncKeepaliveTimer();
+      return;
+    }
+
+    postToBackground({
+      type: "compression-keepalive"
+    });
+  }, KEEPALIVE_INTERVAL_MS);
 }
 
 function failActiveRequests(errorMessage: string) {
@@ -56,6 +83,7 @@ function failActiveRequests(errorMessage: string) {
     });
   }
   activeRequests.clear();
+  syncKeepaliveTimer();
 }
 
 function ensureModelWorker() {
@@ -84,6 +112,7 @@ function ensureModelWorker() {
 
     if (message.status === "ready") {
       activeRequests.delete(requestId);
+      syncKeepaliveTimer();
       postToBackground({
         type: "compression-ready",
         requestId
@@ -93,6 +122,7 @@ function ensureModelWorker() {
 
     if (message.status === "complete") {
       activeRequests.delete(requestId);
+      syncKeepaliveTimer();
       postToBackground({
         type: "compression-complete",
         requestId,
@@ -103,6 +133,7 @@ function ensureModelWorker() {
 
     if (message.status === "error") {
       activeRequests.delete(requestId);
+      syncKeepaliveTimer();
       postToBackground({
         type: "compression-error",
         requestId,
@@ -134,6 +165,7 @@ chrome.runtime.onMessage.addListener(
 
     if (message.type === "warmup") {
       activeRequests.set(message.requestId, { kind: "warmup" });
+      syncKeepaliveTimer();
       worker.postMessage({
         type: "warmup",
         requestId: message.requestId
@@ -150,6 +182,7 @@ chrome.runtime.onMessage.addListener(
       }
 
       activeRequests.set(message.requestId, { kind: "compress" });
+      syncKeepaliveTimer();
       worker.postMessage({
         ...payload,
         type: "compress",

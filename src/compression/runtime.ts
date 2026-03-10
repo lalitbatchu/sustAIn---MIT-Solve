@@ -32,11 +32,25 @@ const oaiTokenizer = new Tiktoken(o200k_base);
 
 let compressorPromise: Promise<CompressionCore.PromptCompressor> | null = null;
 
-env.allowLocalModels = false;
-env.allowRemoteModels = true;
 env.useBrowserCache = true;
 
 const onnxWasmEnvironment = env.backends.onnx.wasm;
+const localModelBaseUrl =
+  typeof chrome !== "undefined" && chrome.runtime?.getURL
+    ? chrome.runtime.getURL("models/")
+    : typeof self !== "undefined" && "location" in self
+      ? new URL("../models/", self.location.href).href
+      : null;
+
+if (localModelBaseUrl) {
+  env.localModelPath = localModelBaseUrl;
+  env.allowLocalModels = true;
+  env.allowRemoteModels = false;
+} else {
+  env.allowLocalModels = false;
+  env.allowRemoteModels = true;
+}
+
 if (onnxWasmEnvironment) {
   const assetBaseUrl =
     typeof chrome !== "undefined" && chrome.runtime?.getURL

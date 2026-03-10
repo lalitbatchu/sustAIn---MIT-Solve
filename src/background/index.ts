@@ -31,6 +31,10 @@ type OffscreenCommand =
 type OffscreenEvent =
   | {
       target: typeof BACKGROUND_TARGET;
+      type: "compression-keepalive";
+    }
+  | {
+      target: typeof BACKGROUND_TARGET;
       type: "compression-progress";
       requestId: number;
       phase?: "init" | "compress";
@@ -126,6 +130,10 @@ async function dispatchToOffscreen(message: OffscreenCommand) {
 }
 
 function handleOffscreenEvent(message: OffscreenEvent) {
+  if (message.type === "compression-keepalive") {
+    return;
+  }
+
   const pending = pendingRequests.get(message.requestId);
   if (!pending) return;
 
