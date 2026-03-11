@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import {
-  Cloud,
   Droplet,
   FileText,
   Mail,
+  Percent,
   SlidersHorizontal,
   Zap,
   Undo
@@ -27,17 +27,15 @@ function App() {
   useEffect(() => {
     let mounted = true;
     const relevantStorageKeys = new Set([
-      "bottlesSaved",
-      "phoneCharges",
-      "milesDriven",
       "totalTokens",
+      "totalOriginalTokens",
+      "totalCompressedTokens",
+      "compressionPercent",
       "totalWater",
       "totalEnergy",
-      "totalCo2",
       "tokensSaved",
       "waterMlSaved",
       "energyWhSaved",
-      "co2GramsSaved",
       "undoEnabled",
       "enableSlider",
       "compressionLevel",
@@ -76,15 +74,14 @@ function App() {
         type?: string;
         payload?: {
           totalTokens?: number;
+          totalOriginalTokens?: number;
+          totalCompressedTokens?: number;
+          compressionPercent?: number;
           totalWater?: number;
           totalEnergy?: number;
-          totalCo2?: number;
           tokensSaved?: number;
           waterMlSaved?: number;
           energyWhSaved?: number;
-          co2GramsSaved?: number;
-          bottlesSaved?: number;
-          milesDriven?: number;
         };
       };
       if (incoming?.type !== "eco-totals-updated") return;
@@ -104,9 +101,9 @@ function App() {
     undoEnabled,
     enableSlider,
     totalTokens,
+    compressionPercent,
     totalWater,
-    totalEnergy,
-    totalCo2
+    totalEnergy
   } = storageState;
 
   const toggleTrackClasses = undoEnabled
@@ -207,7 +204,7 @@ function App() {
 
         <section className="mt-5 border-t border-white/10 pt-4">
           <p className="text-xs uppercase tracking-wide text-white/50">
-            Eco stats
+            Usage & Savings
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[11px] text-white/70">
             <div className="rounded-lg border border-white/10 bg-white/5 p-2">
@@ -220,6 +217,19 @@ function App() {
               <p className="mt-1 text-sm font-semibold text-white/90">
                 <span className="pet-stat-value">
                   {Math.max(0, Math.round(totalTokens)).toLocaleString()}
+                </span>
+              </p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+              <div className="mb-1 flex items-center justify-center gap-1.5">
+                <Percent className="pet-stat-icon h-4 w-4" />
+                <p className="text-[10px] uppercase tracking-wide text-white/40">
+                  Compression %
+                </p>
+              </div>
+              <p className="mt-1 text-sm font-semibold text-white/90">
+                <span className="pet-stat-value">
+                  {Math.max(0, compressionPercent).toFixed(0)}%
                 </span>
               </p>
             </div>
@@ -243,17 +253,6 @@ function App() {
               </div>
               <p className="mt-1 text-sm font-semibold text-white/90">
                 <span className="pet-stat-value">{totalEnergy.toFixed(2)} Wh</span>
-              </p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-2">
-              <div className="mb-1 flex items-center justify-center gap-1.5">
-                <Cloud className="pet-stat-icon h-4 w-4" />
-                <p className="text-[10px] uppercase tracking-wide text-white/40">
-                  CO2
-                </p>
-              </div>
-              <p className="mt-1 text-sm font-semibold text-white/90">
-                <span className="pet-stat-value">{totalCo2.toFixed(2)} g</span>
               </p>
             </div>
           </div>

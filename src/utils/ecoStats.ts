@@ -2,42 +2,45 @@ import { encode } from "gpt-tokenizer/encoding/o200k_base";
 
 export type EcoTotals = {
   totalTokens: number;
+  totalOriginalTokens: number;
+  totalCompressedTokens: number;
+  compressionPercent: number;
   totalWater: number;
   totalEnergy: number;
-  totalCo2: number;
 };
 
 type EcoPayload = {
   tokens: number;
+  originalTokens: number;
+  compressedTokens: number;
+  compressionPercent: number;
   waterMl: number;
   energyWh: number;
-  co2Grams: number;
 };
 
 const WATER_ML_PER_TOKEN = 1.04;
 const ENERGY_WH_PER_TOKEN = 0.12;
-const CO2_G_PER_TOKEN = 0.048;
 
 const WORKER_URL = "https://backend.lalitbatchu.workers.dev";
 const DEFAULT_TOTALS: EcoTotals = {
   totalTokens: 0,
+  totalOriginalTokens: 0,
+  totalCompressedTokens: 0,
+  compressionPercent: 0,
   totalWater: 0,
-  totalEnergy: 0,
-  totalCo2: 0
+  totalEnergy: 0
 };
 
 type LegacyTotals = {
   tokensSaved: number;
   waterMlSaved: number;
   energyWhSaved: number;
-  co2GramsSaved: number;
 };
 
 const DEFAULT_LEGACY_TOTALS: LegacyTotals = {
   tokensSaved: 0,
   waterMlSaved: 0,
-  energyWhSaved: 0,
-  co2GramsSaved: 0
+  energyWhSaved: 0
 };
 
 export function countPromptTokens(text: string): number {
@@ -54,9 +57,17 @@ export function calculateEcoStats(originalTokens: number, compressedTokens: numb
   const tokens = Math.max(0, originalTokens - compressedTokens);
   const waterMl = tokens * WATER_ML_PER_TOKEN;
   const energyWh = tokens * ENERGY_WH_PER_TOKEN;
-  const co2Grams = tokens * CO2_G_PER_TOKEN;
+  const compressionPercent =
+    originalTokens > 0 ? (tokens / originalTokens) * 100 : 0;
 
-  return { tokens, waterMl, energyWh, co2Grams };
+  return {
+    tokens,
+    originalTokens,
+    compressedTokens,
+    compressionPercent,
+    waterMl,
+    energyWh
+  };
 }
 
 export function processSavings(originalText: string, compressedText: string) {
@@ -73,12 +84,19 @@ export async function logEcoStats(payload: EcoPayload): Promise<void> {
   };
 
   const tokens = Math.max(0, toNumber(payload.tokens));
+  const originalTokens = Math.max(0, toNumber(payload.originalTokens));
+  const compressedTokens = Math.max(0, toNumber(payload.compressedTokens));
+  const compressionPercent = Math.max(0, toNumber(payload.compressionPercent));
   const waterMl = Math.max(0, toNumber(payload.waterMl));
   const energyWh = Math.max(0, toNumber(payload.energyWh));
-  const rawCo2 = Math.max(0, toNumber(payload.co2Grams));
-  const co2Grams = rawCo2 > 0 ? rawCo2 : tokens * CO2_G_PER_TOKEN;
 
-  if (tokens <= 0 && waterMl <= 0 && energyWh <= 0 && co2Grams <= 0) {
+  if (
+    tokens <= 0 &&
+    originalTokens <= 0 &&
+    compressedTokens <= 0 &&
+    waterMl <= 0 &&
+    energyWh <= 0
+  ) {
     return;
   }
 
@@ -88,34 +106,46 @@ export async function logEcoStats(payload: EcoPayload): Promise<void> {
         totalTokens: Number(
           items.totalTokens ?? items.tokensSaved ?? DEFAULT_TOTALS.totalTokens
         ),
+        totalOriginalTokens: Number(
+          items.totalOriginalTokens ?? DEFAULT_TOTALS.totalOriginalTokens
+        ),
+        totalCompressedTokens: Number(
+          items.totalCompressedTokens ?? DEFAULT_TOTALS.totalCompressedTokens
+        ),
+        compressionPercent: Number(
+          items.compressionPercent ?? DEFAULT_TOTALS.compressionPercent
+        ),
         totalWater: Number(
           items.totalWater ?? items.waterMlSaved ?? DEFAULT_TOTALS.totalWater
         ),
         totalEnergy: Number(
           items.totalEnergy ?? items.energyWhSaved ?? DEFAULT_TOTALS.totalEnergy
         ),
-        totalCo2: Number(
-          items.totalCo2 ?? items.co2GramsSaved ?? DEFAULT_TOTALS.totalCo2
-        ),
         tokensSaved: Number(items.tokensSaved ?? DEFAULT_LEGACY_TOTALS.tokensSaved),
         waterMlSaved: Number(items.waterMlSaved ?? DEFAULT_LEGACY_TOTALS.waterMlSaved),
-        energyWhSaved: Number(items.energyWhSaved ?? DEFAULT_LEGACY_TOTALS.energyWhSaved),
-        co2GramsSaved: Number(items.co2GramsSaved ?? DEFAULT_LEGACY_TOTALS.co2GramsSaved)
+        energyWhSaved: Number(items.energyWhSaved ?? DEFAULT_LEGACY_TOTALS.energyWhSaved)
       });
     });
   });
 
+  const nextTotalOriginalTokens = totals.totalOriginalTokens + originalTokens;
+  const nextTotalCompressedTokens =
+    totals.totalCompressedTokens + compressedTokens;
+  const nextCompressionPercent =
+    nextTotalOriginalTokens > 0
+      ? ((nextTotalOriginalTokens - nextTotalCompressedTokens) /
+          nextTotalOriginalTokens) *
+        100
+      : compressionPercent;
+
   const nextTotals: EcoTotals = {
     totalTokens: totals.totalTokens + tokens,
+    totalOriginalTokens: nextTotalOriginalTokens,
+    totalCompressedTokens: nextTotalCompressedTokens,
+    compressionPercent: nextCompressionPercent,
     totalWater: totals.totalWater + waterMl,
-    totalEnergy: totals.totalEnergy + energyWh,
-    totalCo2: totals.totalCo2 + co2Grams
+    totalEnergy: totals.totalEnergy + energyWh
   };
-
-  const bottleMl = 500;
-  const bottlesSaved = nextTotals.totalWater / bottleMl;
-  const phoneCharges = nextTotals.totalEnergy / 12;
-  const milesDriven = nextTotals.totalCo2 / 400;
 
   await new Promise<void>((resolve) => {
     chrome.storage.local.set(
@@ -124,11 +154,7 @@ export async function logEcoStats(payload: EcoPayload): Promise<void> {
         // Legacy aliases keep popup updates stable if any older UI path is still present.
         tokensSaved: nextTotals.totalTokens,
         waterMlSaved: nextTotals.totalWater,
-        energyWhSaved: nextTotals.totalEnergy,
-        co2GramsSaved: nextTotals.totalCo2,
-        bottlesSaved,
-        phoneCharges,
-        milesDriven
+        energyWhSaved: nextTotals.totalEnergy
       },
       () => resolve()
     );
@@ -136,17 +162,16 @@ export async function logEcoStats(payload: EcoPayload): Promise<void> {
 
   console.log("EcoStats: totals updated", {
     totalTokens: nextTotals.totalTokens,
+    totalOriginalTokens: nextTotals.totalOriginalTokens,
+    totalCompressedTokens: nextTotals.totalCompressedTokens,
+    compressionPercent: nextTotals.compressionPercent,
     totalWater: nextTotals.totalWater,
-    totalEnergy: nextTotals.totalEnergy,
-    totalCo2: nextTotals.totalCo2,
-    bottlesSaved,
-    phoneCharges,
-    milesDriven
+    totalEnergy: nextTotals.totalEnergy
   });
 
   chrome.runtime.sendMessage({
     type: "eco-totals-updated",
-    payload: { ...nextTotals, bottlesSaved, phoneCharges, milesDriven }
+    payload: nextTotals
   });
 
   const workerPayload = { tokens };

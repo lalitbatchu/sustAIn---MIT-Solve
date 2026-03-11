@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { setGeminiPromptValue } from "../utils/geminiDomUtils";
 import { setPromptValue } from "../utils/domUtils";
+import {
+  TUTORIAL_COMPARISON_OUTPUTS,
+  TUTORIAL_COMPARISON_STATS,
+  TUTORIAL_COMPARISON_VALIDATIONS
+} from "./tutorialComparisonData";
 import {
   DEFAULT_STORAGE_STATE,
   getStorage,
@@ -37,14 +42,16 @@ const IS_PERPLEXITY =
 
 const SAMPLE_TEXT =
   "I am actually really very interested in understanding, in a detailed and step-by-step way, the process by which the water on Earth evaporates from oceans, lakes, and rivers, rises into the atmosphere to form clouds, and then eventually falls back to the ground as rain, snow, sleet, or hail, and I would like you to please explain why this process is so extremely important for all life on our planet.";
-const STATS_PREVIEW_STEP_INDEX = 5;
+const COMPARE_RESULTS_STEP_INDEX = 3;
+const STATS_PREVIEW_STEP_INDEX = 6;
 const TUTORIAL_RUNTIME_FLAG = "__petTutorialKeepVisible";
+const COMPARISON_TRANSITION_MS = 220;
 
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     title: "sustAIn",
     content:
-      "This tool helps save water, tokens, carbon dioxide, and energy by compressing your AI prompts",
+      "sustAIn shortens AI prompts so you can fit more instructions within model limits and reduce token usage. This also lowers the energy and water used by large AI models.",
     buttonText: "Start Tutorial"
   },
   {
@@ -60,6 +67,12 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     waitForAction: "compress"
   },
   {
+    title: "Compare the Results",
+    content:
+      "These are real outputs from the original and compressed versions of the same prompt. Even though the compressed prompt looks less natural, the model still understands the key instructions and produces a very similar response.",
+    buttonText: "Next"
+  },
+  {
     title: "Undo Capability",
     content:
       "Not happy with the result? You can always click Undo to revert to your original text.",
@@ -73,15 +86,15 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     buttonText: "Next"
   },
   {
-    title: "Track Your Eco-Impact",
+    title: "Track Your Usage & Impact Savings",
     content:
-      "Curious about your savings? Click the extension icon in your toolbar to view real-time stats and customize your settings (like hiding the Undo button).",
+      "Click the extension icon in your toolbar to view your usage and savings stats and customize your settings.",
     buttonText: "Next"
   },
   {
     title: "You're All Set!",
     content:
-      "You are ready to start saving water, energy, carbon dioxide, and tokens. Your prompts stay private, and the tool does not collect personal data.",
+      "You're ready to start reducing token usage and lowering the environmental cost of AI. Your prompts stay private, and the tool does not collect personal data.",
     buttonText: "Finish & Start Saving"
   }
 ];
@@ -466,21 +479,26 @@ export default function TutorialOverlay() {
   const [storageState, setStorageState] = useState<StorageState>(
     DEFAULT_STORAGE_STATE
   );
+  const [comparisonPanelStyle, setComparisonPanelStyle] = useState<CSSProperties | null>(null);
+  const [spotlightStyle, setSpotlightStyle] = useState<CSSProperties | null>(null);
+  const [connectorStyle, setConnectorStyle] = useState<CSSProperties | null>(null);
+  const [renderComparisonPanel, setRenderComparisonPanel] = useState(false);
+  const [comparisonPanelVisible, setComparisonPanelVisible] = useState(false);
+  const tutorialCardRef = useRef<HTMLDivElement | null>(null);
+  const comparisonPanelRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedEditorRef = useRef<EditableElement | null>(null);
   const celebratedFinalStepRef = useRef(false);
   const relevantStorageKeysRef = useRef(
     new Set([
-      "bottlesSaved",
-      "phoneCharges",
-      "milesDriven",
       "totalTokens",
+      "totalOriginalTokens",
+      "totalCompressedTokens",
+      "compressionPercent",
       "totalWater",
       "totalEnergy",
-      "totalCo2",
       "tokensSaved",
       "waterMlSaved",
       "energyWhSaved",
-      "co2GramsSaved",
       "hasSeenTutorial"
     ])
   );
@@ -793,8 +811,43 @@ export default function TutorialOverlay() {
   const step = TUTORIAL_STEPS[currentStep];
   const isActionStep =
     step.waitForAction === "compress" || step.waitForAction === "undo";
+  const isCompareResultsStep = currentStep === COMPARE_RESULTS_STEP_INDEX;
   const isStatsPreviewStep = currentStep === STATS_PREVIEW_STEP_INDEX;
   const isFinalStep = currentStep === TUTORIAL_STEPS.length - 1;
+
+  useEffect(() => {
+    let timerId = 0;
+
+    if (isCompareResultsStep) {
+      setRenderComparisonPanel(true);
+      timerId = window.setTimeout(() => {
+        setComparisonPanelVisible(true);
+      }, 16);
+
+      return () => {
+        window.clearTimeout(timerId);
+      };
+    }
+
+    setComparisonPanelVisible(false);
+
+    if (renderComparisonPanel) {
+      timerId = window.setTimeout(() => {
+        setRenderComparisonPanel(false);
+        setComparisonPanelStyle(null);
+        setSpotlightStyle(null);
+        setConnectorStyle(null);
+      }, COMPARISON_TRANSITION_MS);
+    } else {
+      setComparisonPanelStyle(null);
+      setSpotlightStyle(null);
+      setConnectorStyle(null);
+    }
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [isCompareResultsStep, renderComparisonPanel]);
 
   useEffect(() => {
     if (!isFinalStep) {
@@ -989,6 +1042,221 @@ export default function TutorialOverlay() {
     };
   }, [step.waitForAction]);
 
+  const getComparisonAnchor = (): HTMLElement | null => {
+    const compressButton = findInjectedActionButton("eco-compress-btn");
+    if (compressButton && isElementVisible(compressButton)) {
+      return compressButton.closest<HTMLElement>(".eco-split-btn-group") ?? compressButton;
+    }
+
+    const injectionHost = document.getElementById("prompt-efficiency-root");
+    if (injectionHost && isElementVisible(injectionHost)) {
+      return injectionHost;
+    }
+
+    const fallbackEditor =
+      getPerplexityEditor() ??
+      getCopilotEditor() ??
+      getDeepSeekEditor() ??
+      getGrokEditor() ??
+      getClaudeEditor() ??
+      getChatGPTEditor();
+
+    return fallbackEditor instanceof HTMLElement && isElementVisible(fallbackEditor)
+      ? fallbackEditor
+      : null;
+  };
+
+  const getPromptSpotlightAnchor = (): HTMLElement | null => {
+    const editor =
+      getPerplexityEditor() ??
+      getCopilotEditor() ??
+      getDeepSeekEditor() ??
+      getGrokEditor() ??
+      getClaudeEditor() ??
+      getChatGPTEditor();
+
+    if (editor instanceof HTMLElement && isElementVisible(editor)) {
+      return editor;
+    }
+
+    const injectionHost = document.getElementById("prompt-efficiency-root");
+    if (injectionHost && isElementVisible(injectionHost)) {
+      return injectionHost;
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
+    if (!renderComparisonPanel) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const updatePanelPosition = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const stackedLayout = viewportWidth < 980;
+      const panelWidth = Math.min(stackedLayout ? 380 : 520, viewportWidth - 32);
+      const estimatedPanelHeight = stackedLayout ? 344 : 286;
+      const cardReserve = !stackedLayout && viewportWidth > 1180 ? 396 : 20;
+      const anchor = getComparisonAnchor();
+
+      const baseStyle: CSSProperties = {
+        width: `${panelWidth}px`,
+        maxHeight: "calc(100vh - 72px)"
+      };
+
+      if (!anchor) {
+        setComparisonPanelStyle({
+          ...baseStyle,
+          left: `${Math.max((viewportWidth - panelWidth) / 2, 16)}px`,
+          top: `${Math.max(viewportHeight * 0.48, 250)}px`
+        });
+        return;
+      }
+
+      const rect = anchor.getBoundingClientRect();
+      const centeredLeft = rect.left + rect.width / 2 - panelWidth / 2;
+      const left = Math.min(
+        Math.max(centeredLeft, 16),
+        Math.max(16, viewportWidth - panelWidth - cardReserve)
+      );
+      const top = Math.min(
+        Math.max(rect.top - estimatedPanelHeight - 28, Math.max(viewportHeight * 0.24, 160)),
+        Math.max(32, viewportHeight - estimatedPanelHeight - 32)
+      );
+
+      setComparisonPanelStyle({
+        ...baseStyle,
+        left: `${left}px`,
+        top: `${top}px`
+      });
+    };
+
+    const schedulePanelPosition = () => {
+      if (frameId !== 0) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        updatePanelPosition();
+      });
+    };
+
+    updatePanelPosition();
+
+    const observer = new MutationObserver(() => {
+      schedulePanelPosition();
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
+
+    window.addEventListener("resize", schedulePanelPosition);
+    window.addEventListener("scroll", schedulePanelPosition, true);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", schedulePanelPosition);
+      window.removeEventListener("scroll", schedulePanelPosition, true);
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [renderComparisonPanel]);
+
+  useEffect(() => {
+    if (!renderComparisonPanel) {
+      return;
+    }
+
+    let frameId = 0;
+
+    const updateGuidedEffects = () => {
+      const spotlightAnchor = getPromptSpotlightAnchor();
+      if (spotlightAnchor) {
+        const rect = spotlightAnchor.getBoundingClientRect();
+        const insetX = 10;
+        const insetY = 8;
+
+        setSpotlightStyle({
+          left: `${Math.max(rect.left - insetX, 12)}px`,
+          top: `${Math.max(rect.top - insetY, 12)}px`,
+          width: `${Math.min(rect.width + insetX * 2, window.innerWidth - 24)}px`,
+          height: `${rect.height + insetY * 2}px`
+        });
+      } else {
+        setSpotlightStyle(null);
+      }
+
+      const cardRect = tutorialCardRef.current?.getBoundingClientRect();
+      const panelRect = comparisonPanelRef.current?.getBoundingClientRect();
+
+      if (!cardRect || !panelRect) {
+        setConnectorStyle(null);
+        return;
+      }
+
+      const stackedLayout = panelRect.top > cardRect.bottom;
+      const startX = stackedLayout
+        ? cardRect.left + cardRect.width * 0.5
+        : cardRect.left + 14;
+      const startY = stackedLayout
+        ? cardRect.bottom - 12
+        : cardRect.top + cardRect.height * 0.52;
+      const endX = stackedLayout
+        ? panelRect.left + panelRect.width * 0.52
+        : panelRect.right - 26;
+      const endY = stackedLayout ? panelRect.top + 12 : panelRect.top + 22;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+      const length = Math.max(Math.hypot(deltaX, deltaY), 24);
+      const angle = Math.atan2(deltaY, deltaX);
+
+      setConnectorStyle({
+        left: `${startX}px`,
+        top: `${startY}px`,
+        width: `${length}px`,
+        transform: `rotate(${angle}rad)`
+      });
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId !== 0) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        updateGuidedEffects();
+      });
+    };
+
+    scheduleUpdate();
+
+    const observer = new MutationObserver(() => {
+      scheduleUpdate();
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
+
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, true);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [renderComparisonPanel, comparisonPanelStyle, comparisonPanelVisible]);
+
   const markTutorialSeen = async () => {
     if (typeof chrome === "undefined" || !chrome.storage?.local) {
       return;
@@ -1052,12 +1320,21 @@ export default function TutorialOverlay() {
     <div className="eco-tutorial-overlay" role="dialog" aria-modal="true">
       <div
         className={`eco-tutorial-backdrop ${
-          isActionStep ? "eco-tutorial-backdrop--compress-step" : ""
+          isActionStep
+            ? "eco-tutorial-backdrop--compress-step"
+            : isCompareResultsStep || renderComparisonPanel
+              ? "eco-tutorial-backdrop--comparison-step"
+              : ""
         }`}
       />
       <div
+        ref={tutorialCardRef}
         className={`eco-tutorial-card ${
-          isActionStep ? "eco-tutorial-card-compress-step" : ""
+          isActionStep
+            ? "eco-tutorial-card-compress-step"
+            : isCompareResultsStep
+              ? "eco-tutorial-card-compare-step"
+              : ""
         }`}
       >
         {isFinalStep ? (
@@ -1102,6 +1379,83 @@ export default function TutorialOverlay() {
           </button>
         </div>
       </div>
+      {renderComparisonPanel && spotlightStyle ? (
+        <div
+          className={`eco-tutorial-prompt-spotlight ${
+            comparisonPanelVisible
+              ? "eco-tutorial-prompt-spotlight--visible"
+              : "eco-tutorial-prompt-spotlight--hidden"
+          }`}
+          style={spotlightStyle}
+          aria-hidden="true"
+        />
+      ) : null}
+      {renderComparisonPanel && connectorStyle ? (
+        <div
+          className={`eco-tutorial-connector ${
+            comparisonPanelVisible
+              ? "eco-tutorial-connector--visible"
+              : "eco-tutorial-connector--hidden"
+          }`}
+          style={connectorStyle}
+          aria-hidden="true"
+        />
+      ) : null}
+      {renderComparisonPanel && comparisonPanelStyle ? (
+        <div
+          ref={comparisonPanelRef}
+          className={`eco-tutorial-comparison-panel ${
+            comparisonPanelVisible
+              ? "eco-tutorial-comparison-panel--visible"
+              : "eco-tutorial-comparison-panel--hidden"
+          }`}
+          style={{ ...comparisonPanelStyle, pointerEvents: "none" }}
+          aria-hidden="true"
+        >
+          <div className="eco-tutorial-comparison-header">
+            <span className="eco-tutorial-comparison-kicker">Captured demo</span>
+            <h3 className="eco-tutorial-comparison-title">Shorter Prompt, Similar Result</h3>
+            <p className="eco-tutorial-comparison-subtitle">
+              Real excerpts from the same prompt before and after compression.
+            </p>
+          </div>
+          <div className="eco-tutorial-comparison-stats">
+            {TUTORIAL_COMPARISON_STATS.map((item) => (
+              <div key={item.label} className="eco-tutorial-comparison-stat">
+                <span className="eco-tutorial-comparison-stat-label">{item.label}</span>
+                <span className="eco-tutorial-comparison-stat-value">{item.value}</span>
+              </div>
+            ))}
+          </div>
+          <div className="eco-tutorial-comparison-grid">
+            {TUTORIAL_COMPARISON_OUTPUTS.map((card) => (
+              <article key={card.title} className="eco-tutorial-comparison-output-card">
+                <h4 className="eco-tutorial-comparison-output-title">{card.title}</h4>
+                <p className="eco-tutorial-comparison-output-body">{card.excerpt}</p>
+              </article>
+            ))}
+          </div>
+          <ul className="eco-tutorial-comparison-checklist">
+            {TUTORIAL_COMPARISON_VALIDATIONS.map((item, index) => (
+              <li
+                key={item}
+                className="eco-tutorial-comparison-checklist-item"
+                style={
+                  comparisonPanelVisible
+                    ? { animationDelay: `${160 + index * 120}ms` }
+                    : undefined
+                }
+              >
+                <span
+                  className="eco-tutorial-comparison-check-icon"
+                  aria-hidden="true"
+                />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {isStatsPreviewStep ? (
         <div className="eco-tutorial-toolbar-hint" aria-hidden="true">
           <span className="eco-tutorial-toolbar-text">
@@ -1112,3 +1466,5 @@ export default function TutorialOverlay() {
     </div>
   );
 }
+
+

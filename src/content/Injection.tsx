@@ -1399,9 +1399,9 @@ export default function Injection() {
       await logEcoStats(savings);
       console.log("Compress: eco data synced", {
         tokens: savings.tokens,
+        compressionPercent: savings.compressionPercent,
         waterMl: savings.waterMl,
-        energyWh: savings.energyWh,
-        co2Grams: savings.co2Grams
+        energyWh: savings.energyWh
       });
     } catch (error) {
       console.error("Compress: failed to sync eco data", error);

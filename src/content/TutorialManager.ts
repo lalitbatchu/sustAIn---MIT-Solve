@@ -26,7 +26,7 @@ export default class TutorialManager {
   private readonly steps: TutorialStep[] = [
     {
       title: "sustAIn",
-      body: "This tool helps save water, tokens, carbon dioxide, and energy by compressing your AI prompts.",
+      body: "sustAIn shortens AI prompts so you can fit more instructions within model limits and reduce token usage. This also lowers the energy and water used by large AI models.",
       mode: "center",
       primaryLabel: "Start"
     },
@@ -45,6 +45,13 @@ export default class TutorialManager {
       waitForClickSelector: "#eco-compress-btn"
     },
     {
+      title: "Compare the Results",
+      body:
+        "These are real outputs from the original and compressed versions of the same prompt. Even though the compressed prompt looks less natural, the model still understands the key instructions and produces a very similar response.",
+      mode: "center",
+      primaryLabel: "Next"
+    },
+    {
       title: "Try Undo",
       body: "Not happy? Click Undo to revert.",
       mode: "target",
@@ -61,15 +68,15 @@ export default class TutorialManager {
       primaryLabel: "Next"
     },
     {
-      title: "Check Your Stats",
-      body: "Click the extension icon in your toolbar to view your Water, Energy, and CO2 savings.",
+      title: "Track Your Usage & Impact Savings",
+      body: "Click the extension icon in your toolbar to view your usage and savings stats.",
       mode: "toolbar",
       showStatsPreview: true,
       primaryLabel: "Next"
     },
     {
-      title: "Privacy First",
-      body: "Your prompts stay private, and the tool does not collect personal data.",
+      title: "You're All Set!",
+      body: "You're ready to start reducing token usage and lowering the environmental cost of AI. Your prompts stay private, and the tool does not collect personal data.",
       mode: "center",
       primaryLabel: "Finish Tutorial"
     }

@@ -1,13 +1,12 @@
 export type CompressionLevel = "low" | "medium" | "high";
 
 export type StorageState = {
-  bottlesSaved: number;
-  phoneCharges: number;
-  milesDriven: number;
   totalTokens: number;
+  totalOriginalTokens: number;
+  totalCompressedTokens: number;
+  compressionPercent: number;
   totalWater: number;
   totalEnergy: number;
-  totalCo2: number;
   undoEnabled: boolean;
   enableSlider: boolean;
   compressionLevel: CompressionLevel;
@@ -18,7 +17,6 @@ type LegacyTotals = {
   tokensSaved: number;
   waterMlSaved: number;
   energyWhSaved: number;
-  co2GramsSaved: number;
 };
 
 type StorageItems = StorageState &
@@ -27,13 +25,12 @@ type StorageItems = StorageState &
   };
 
 export const DEFAULT_STORAGE_STATE: StorageState = {
-  bottlesSaved: 0,
-  phoneCharges: 0,
-  milesDriven: 0,
   totalTokens: 0,
+  totalOriginalTokens: 0,
+  totalCompressedTokens: 0,
+  compressionPercent: 0,
   totalWater: 0,
   totalEnergy: 0,
-  totalCo2: 0,
   undoEnabled: true,
   enableSlider: true,
   compressionLevel: "medium",
@@ -43,8 +40,7 @@ export const DEFAULT_STORAGE_STATE: StorageState = {
 const DEFAULT_LEGACY_TOTALS: LegacyTotals = {
   tokensSaved: 0,
   waterMlSaved: 0,
-  energyWhSaved: 0,
-  co2GramsSaved: 0
+  energyWhSaved: 0
 };
 
 function toNumber(value: unknown, fallback = 0) {
@@ -75,19 +71,31 @@ export function normalizeStorage(
     source.totalEnergy ?? source.energyWhSaved,
     DEFAULT_STORAGE_STATE.totalEnergy
   );
-  const totalCo2 = toNumber(
-    source.totalCo2 ?? source.co2GramsSaved,
-    DEFAULT_STORAGE_STATE.totalCo2
+  const totalOriginalTokens = toNumber(
+    source.totalOriginalTokens,
+    DEFAULT_STORAGE_STATE.totalOriginalTokens
+  );
+  const totalCompressedTokens = toNumber(
+    source.totalCompressedTokens,
+    DEFAULT_STORAGE_STATE.totalCompressedTokens
+  );
+  const derivedCompressionPercent =
+    totalOriginalTokens > 0
+      ? ((totalOriginalTokens - totalCompressedTokens) / totalOriginalTokens) *
+        100
+      : DEFAULT_STORAGE_STATE.compressionPercent;
+  const compressionPercent = toNumber(
+    source.compressionPercent,
+    derivedCompressionPercent
   );
 
   return {
-    bottlesSaved: toNumber(source.bottlesSaved, totalWater / 500),
-    phoneCharges: toNumber(source.phoneCharges, totalEnergy / 12),
-    milesDriven: toNumber(source.milesDriven, totalCo2 / 400),
     totalTokens,
+    totalOriginalTokens,
+    totalCompressedTokens,
+    compressionPercent: Math.max(0, compressionPercent),
     totalWater,
     totalEnergy,
-    totalCo2,
     undoEnabled: Boolean(source.undoEnabled ?? DEFAULT_STORAGE_STATE.undoEnabled),
     enableSlider: Boolean(
       source.enableSlider ?? DEFAULT_STORAGE_STATE.enableSlider
@@ -103,17 +111,15 @@ export function getStorage(): Promise<StorageState> {
   return new Promise((resolve) => {
     chrome.storage.local.get(
       [
-        "bottlesSaved",
-        "phoneCharges",
-        "milesDriven",
         "totalTokens",
+        "totalOriginalTokens",
+        "totalCompressedTokens",
+        "compressionPercent",
         "totalWater",
         "totalEnergy",
-        "totalCo2",
         "tokensSaved",
         "waterMlSaved",
         "energyWhSaved",
-        "co2GramsSaved",
         "undoEnabled",
         "enableSlider",
         "enableSliderInitialized",
