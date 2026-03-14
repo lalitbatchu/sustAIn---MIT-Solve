@@ -7,7 +7,7 @@ import css from "../style.css?inline";
 import contentCss from "./styles.css?inline";
 import tutorialCss from "./tutorial.css?inline";
 
-console.log("sustAIn: Content script loaded");
+console.log("SustAIn: Content script loaded");
 
 let targetLogged = false;
 let scheduled = false;
@@ -479,10 +479,6 @@ function resolveInjectionTarget(): InjectionTarget | null {
 
 function handleScan() {
   scheduled = false;
-  if (IS_SUPPORTED) {
-    injectTutorialOverlayOnce();
-  }
-
   const target = resolveInjectionTarget();
   if (!target && !debugLogged) {
     debugLogged = true;
@@ -494,7 +490,7 @@ function handleScan() {
             ...CHATGPT_TEXTAREA_SELECTORS,
             ...CHATGPT_EDITABLE_SELECTORS
           ]);
-    console.log("sustAIn: Target not found yet", {
+    console.log("SustAIn: Target not found yet", {
       site: SITE_LABEL,
       promptElementFound: Boolean(promptEl)
     });
@@ -503,10 +499,11 @@ function handleScan() {
 
   if (!targetLogged) {
     targetLogged = true;
-    console.log("sustAIn: Target found", { site: SITE_LABEL });
+    console.log("SustAIn: Target found", { site: SITE_LABEL });
   }
 
   injectUI(target);
+  injectTutorialOverlayOnce();
 }
 
 function scheduleScan() {
@@ -517,7 +514,7 @@ function scheduleScan() {
 }
 
 function injectTutorialOverlayOnce() {
-  const tutorialRootParent = document.body ?? document.documentElement;
+  const tutorialRootParent = document.documentElement;
   if (!tutorialRootParent) return;
 
   if (!document.getElementById(TUTORIAL_STYLE_ID)) {
@@ -563,8 +560,6 @@ const observer = new MutationObserver((mutations) => {
 });
 
 if (IS_SUPPORTED) {
-  injectTutorialOverlayOnce();
-
   observer.observe(document.body, {
     childList: true,
     subtree: true
@@ -578,7 +573,7 @@ if (IS_SUPPORTED) {
     }, 1000);
   }
 } else {
-  console.log("sustAIn: Unsupported host", { host: HOSTNAME });
+  console.log("SustAIn: Unsupported host", { host: HOSTNAME });
 }
 
 function injectUI(target: InjectionTarget) {

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import {
   Droplet,
   FileText,
+  Leaf,
   Mail,
   Percent,
   SlidersHorizontal,
@@ -134,9 +135,9 @@ function App() {
       <div className="w-80 rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-5 text-white shadow-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.16)] backdrop-blur-xl">
         <header className="space-y-3">
           <div className="flex items-center gap-2">
-            <Droplet className="pet-header-icon h-5 w-5 text-white/70" />
+            <Leaf className="pet-header-icon h-5 w-5 text-emerald-400" />
             <h1 className="text-base font-semibold tracking-wide">
-              sustAIn
+              SustAIn
             </h1>
           </div>
         </header>
@@ -261,7 +262,7 @@ function App() {
         <footer className="mt-5 border-t border-white/10 pt-4 text-xs text-white/60">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-white/50" />
-            <span>sreekarbatchu@gmail.com</span>
+            <span>lalitbatchu@gmail.com</span>
           </div>
         </footer>
       </div>

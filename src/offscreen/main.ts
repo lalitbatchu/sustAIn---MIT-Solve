@@ -143,7 +143,7 @@ function ensureModelWorker() {
   };
 
   worker.onerror = (event) => {
-    console.error("sustAIn: model worker failed", event);
+    console.error("SustAIn: model worker failed", event);
     failActiveRequests(event.message || "Compression worker crashed");
     worker.terminate();
     if (modelWorker === worker) {
@@ -197,4 +197,4 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
-console.log("sustAIn: offscreen document loaded");
+console.log("SustAIn: offscreen document loaded");

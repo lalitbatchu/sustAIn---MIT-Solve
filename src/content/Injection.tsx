@@ -6,7 +6,7 @@ import {
   type MouseEvent as ReactMouseEvent
 } from "react";
 import ReactDOM from "react-dom";
-import { Check, ChevronDown, Droplet, Undo } from "lucide-react";
+import { Check, ChevronDown, Leaf, Undo } from "lucide-react";
 import { getPromptValue, setPromptValue } from "../utils/domUtils";
 import { getGeminiPromptValue, setGeminiPromptValue } from "../utils/geminiDomUtils";
 import { countPromptTokens, logEcoStats, processSavings } from "../utils/ecoStats";
@@ -39,6 +39,8 @@ const COMPRESSION_RATE_BY_LEVEL: Record<CompressionLevel, number> = {
   high: 0.55
 };
 const COMPRESSION_REQUEST_TIMEOUT_MS = 300000;
+const TUTORIAL_DROPDOWN_OPEN_EVENT = "eco-tutorial-open-compression-menu";
+const TUTORIAL_DROPDOWN_CLOSE_EVENT = "eco-tutorial-close-compression-menu";
 
 const PORTAL_DROPDOWN_STYLE_ID = "eco-portal-dropdown-styles";
 const PORTAL_DROPDOWN_STYLE_TEXT = `
@@ -737,7 +739,7 @@ export default function Injection() {
 
         requestAnimationFrame(() => {
           if (current() !== expected) {
-            console.warn(`sustAIn: ${providerLabel} write mismatch`, {
+            console.warn(`SustAIn: ${providerLabel} write mismatch`, {
               replacedWithPaste,
               replacedWithExec,
               expectedLength: expected.length,
@@ -747,7 +749,7 @@ export default function Injection() {
         });
       });
     } catch (error) {
-      console.error(`sustAIn: Failed to write ${providerLabel} prompt`, error);
+      console.error(`SustAIn: Failed to write ${providerLabel} prompt`, error);
     }
   };
 
@@ -771,7 +773,7 @@ export default function Injection() {
   const readGrokPrompt = () => {
     const editor = getGrokEditor();
     if (!editor) {
-      console.warn("sustAIn: Grok editor not found");
+      console.warn("SustAIn: Grok editor not found");
       return "";
     }
     if (editor instanceof HTMLTextAreaElement) {
@@ -788,7 +790,7 @@ export default function Injection() {
   const readDeepSeekPrompt = () => {
     const editor = getDeepSeekEditor();
     if (!editor) {
-      console.warn("sustAIn: DeepSeek editor not found");
+      console.warn("SustAIn: DeepSeek editor not found");
       return "";
     }
     if (editor instanceof HTMLTextAreaElement) {
@@ -800,7 +802,7 @@ export default function Injection() {
   const readCopilotPrompt = () => {
     const editor = getCopilotEditor();
     if (!editor) {
-      console.warn("sustAIn: Copilot editor not found");
+      console.warn("SustAIn: Copilot editor not found");
       return "";
     }
     if (editor instanceof HTMLTextAreaElement) {
@@ -812,7 +814,7 @@ export default function Injection() {
   const readPerplexityPrompt = () => {
     const editor = getPerplexityEditor();
     if (!editor) {
-      console.warn("sustAIn: Perplexity editor not found");
+      console.warn("SustAIn: Perplexity editor not found");
       return "";
     }
     if (editor instanceof HTMLTextAreaElement) {
@@ -824,7 +826,7 @@ export default function Injection() {
   const writeGrokPrompt = (value: string) => {
     const editor = getGrokEditor();
     if (!editor) {
-      console.warn("sustAIn: Grok editor not found");
+      console.warn("SustAIn: Grok editor not found");
       return;
     }
 
@@ -850,7 +852,7 @@ export default function Injection() {
   const writeDeepSeekPrompt = (value: string) => {
     const editor = getDeepSeekEditor();
     if (!editor) {
-      console.warn("sustAIn: DeepSeek editor not found");
+      console.warn("SustAIn: DeepSeek editor not found");
       return;
     }
 
@@ -915,7 +917,7 @@ export default function Injection() {
   const writeCopilotPrompt = (value: string) => {
     const editor = getCopilotEditor();
     if (!editor) {
-      console.warn("sustAIn: Copilot editor not found");
+      console.warn("SustAIn: Copilot editor not found");
       return;
     }
 
@@ -1018,14 +1020,14 @@ export default function Injection() {
       editor.dispatchEvent(inputEvent);
       editor.dispatchEvent(new Event("change", { bubbles: true }));
     } catch (error) {
-      console.error("sustAIn: Failed to write Copilot prompt", error);
+      console.error("SustAIn: Failed to write Copilot prompt", error);
     }
   };
 
   const writePerplexityPrompt = (value: string) => {
     const editor = getPerplexityEditor();
     if (!editor) {
-      console.warn("sustAIn: Perplexity editor not found");
+      console.warn("SustAIn: Perplexity editor not found");
       return;
     }
 
@@ -1197,7 +1199,7 @@ export default function Injection() {
         moveCaretToEnd();
         requestAnimationFrame(() => {
           if (current() !== expected) {
-            console.warn("sustAIn: Perplexity write mismatch", {
+            console.warn("SustAIn: Perplexity write mismatch", {
               replacedWithPaste,
               replacedWithExec,
               expectedLength: expected.length,
@@ -1207,7 +1209,7 @@ export default function Injection() {
         });
       });
     } catch (error) {
-      console.error("sustAIn: Failed to write Perplexity prompt", error);
+      console.error("SustAIn: Failed to write Perplexity prompt", error);
     }
   };
 
@@ -1560,6 +1562,34 @@ export default function Injection() {
   }, [isMenuOpen]);
 
   useEffect(() => {
+    const handleTutorialOpenMenu = () => {
+      if (!enableSlider) return;
+      setIsMenuOpen(true);
+    };
+
+    const handleTutorialCloseMenu = () => {
+      setIsMenuOpen(false);
+    };
+
+    window.addEventListener(TUTORIAL_DROPDOWN_OPEN_EVENT, handleTutorialOpenMenu);
+    window.addEventListener(
+      TUTORIAL_DROPDOWN_CLOSE_EVENT,
+      handleTutorialCloseMenu
+    );
+
+    return () => {
+      window.removeEventListener(
+        TUTORIAL_DROPDOWN_OPEN_EVENT,
+        handleTutorialOpenMenu
+      );
+      window.removeEventListener(
+        TUTORIAL_DROPDOWN_CLOSE_EVENT,
+        handleTutorialCloseMenu
+      );
+    };
+  }, [enableSlider]);
+
+  useEffect(() => {
     if (!isMenuOpen) return;
 
     const updatePosition = () => {
@@ -1652,7 +1682,7 @@ export default function Injection() {
             {status === "success" ? (
               <Check className="h-4 w-4" />
             ) : (
-              <Droplet className="h-4 w-4" />
+              <Leaf className="h-4 w-4" />
             )}
             {status === "success" ? "Saved" : isCompressing ? "Working..." : "Compress"}
           </button>

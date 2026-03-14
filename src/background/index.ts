@@ -71,7 +71,7 @@ type RuntimeMessage =
       };
     };
 
-console.log("sustAIn: background service worker loaded");
+console.log("SustAIn: background service worker loaded");
 
 let nextRequestId = 1;
 let creatingOffscreenDocument: Promise<void> | null = null;
@@ -91,7 +91,7 @@ function safePostMessage(port: chrome.runtime.Port, payload: unknown) {
   try {
     port.postMessage(payload);
   } catch (error) {
-    console.warn("sustAIn: compression port closed", error);
+    console.warn("SustAIn: compression port closed", error);
   }
 }
 
@@ -179,7 +179,7 @@ chrome.runtime.onMessage.addListener(
       const tokens = Math.max(0, toNumber(rawPayload.tokens));
       const normalizedPayload = { tokens };
 
-      console.log("sustAIn: eco-log received", normalizedPayload);
+      console.log("SustAIn: eco-log received", normalizedPayload);
 
       fetch(WORKER_URL, {
         method: "POST",
@@ -276,7 +276,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
     void dispatchToOffscreen(offscreenCommand).catch((error) => {
       pendingRequests.delete(requestId);
-      console.error("sustAIn: compression dispatch failed", error);
+      console.error("SustAIn: compression dispatch failed", error);
       safePostMessage(port, {
         status: "error",
         message: toErrorMessage(error)

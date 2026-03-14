@@ -25,8 +25,8 @@ const STYLE_ID = "eco-tutorial-style";
 export default class TutorialManager {
   private readonly steps: TutorialStep[] = [
     {
-      title: "sustAIn",
-      body: "sustAIn shortens AI prompts so you can fit more instructions within model limits and reduce token usage. This also lowers the energy and water used by large AI models.",
+      title: "SustAIn",
+      body: "SustAIn shortens AI prompts so you can fit more instructions within model limits and reduce token usage, while also lowering the energy and water used by large AI models.",
       mode: "center",
       primaryLabel: "Start"
     },
@@ -289,8 +289,10 @@ export default class TutorialManager {
       const skipBtn = document.createElement("button");
       skipBtn.type = "button";
       skipBtn.className = "eco-tutorial-btn eco-secondary";
-      skipBtn.textContent = "Skip";
-      skipBtn.addEventListener("click", () => this.nextStep());
+      skipBtn.textContent = "End Tutorial";
+      skipBtn.addEventListener("click", () => {
+        void this.finishTutorial();
+      });
       actions.appendChild(skipBtn);
     }
 

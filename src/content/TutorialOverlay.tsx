@@ -43,21 +43,24 @@ const IS_PERPLEXITY =
 const SAMPLE_TEXT =
   "I am actually really very interested in understanding, in a detailed and step-by-step way, the process by which the water on Earth evaporates from oceans, lakes, and rivers, rises into the atmosphere to form clouds, and then eventually falls back to the ground as rain, snow, sleet, or hail, and I would like you to please explain why this process is so extremely important for all life on our planet.";
 const COMPARE_RESULTS_STEP_INDEX = 3;
+const COMPRESSION_LEVEL_STEP_INDEX = 5;
 const STATS_PREVIEW_STEP_INDEX = 6;
 const TUTORIAL_RUNTIME_FLAG = "__petTutorialKeepVisible";
 const COMPARISON_TRANSITION_MS = 220;
+const TUTORIAL_DROPDOWN_OPEN_EVENT = "eco-tutorial-open-compression-menu";
+const TUTORIAL_DROPDOWN_CLOSE_EVENT = "eco-tutorial-close-compression-menu";
 
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
-    title: "sustAIn",
+    title: "SustAIn",
     content:
-      "sustAIn shortens AI prompts so you can fit more instructions within model limits and reduce token usage. This also lowers the energy and water used by large AI models.",
+      "SustAIn shortens AI prompts so you can fit more instructions within model limits and reduce token usage, while also lowering the energy and water used by large AI models.",
     buttonText: "Start Tutorial"
   },
   {
     title: "Let's Try a Sample",
     content:
-      "To see how much you can save, we need a long, inefficient prompt. Don't worry about typing it - we'll paste it for you.",
+      "To see how much you can save, we need a long, inefficient prompt. Don't worry about typing it, we'll paste it for you.",
     buttonText: "Paste Sample Prompt"
   },
   {
@@ -812,6 +815,7 @@ export default function TutorialOverlay() {
   const isActionStep =
     step.waitForAction === "compress" || step.waitForAction === "undo";
   const isCompareResultsStep = currentStep === COMPARE_RESULTS_STEP_INDEX;
+  const isCompressionLevelStep = currentStep === COMPRESSION_LEVEL_STEP_INDEX;
   const isStatsPreviewStep = currentStep === STATS_PREVIEW_STEP_INDEX;
   const isFinalStep = currentStep === TUTORIAL_STEPS.length - 1;
 
@@ -1041,6 +1045,145 @@ export default function TutorialOverlay() {
       }
     };
   }, [step.waitForAction]);
+
+  useEffect(() => {
+    if (!isCompressionLevelStep) return;
+
+    let target: HTMLElement | null = null;
+    let highlightedElement: HTMLElement | null = null;
+    let highlightAnimation: Animation | null = null;
+    let menuOpened = false;
+    const targetId = "eco-compress-trigger-btn";
+    const originalStyles: Record<
+      string,
+      { value: string; priority: string }
+    > = {};
+    const highlightProps = [
+      "position",
+      "z-index",
+      "box-shadow",
+      "animation",
+      "outline",
+      "outline-offset",
+      "filter",
+      "transform"
+    ];
+
+    const applyHighlightStyles = (element: HTMLElement) => {
+      highlightProps.forEach((prop) => {
+        originalStyles[prop] = {
+          value: element.style.getPropertyValue(prop),
+          priority: element.style.getPropertyPriority(prop)
+        };
+      });
+
+      element.classList.add("eco-tutorial-highlight");
+      element.style.setProperty("position", "relative", "important");
+      element.style.setProperty("z-index", "2147483650", "important");
+      element.style.setProperty(
+        "box-shadow",
+        "0 0 0 2px rgba(34, 197, 94, 0.82), 0 0 22px rgba(34, 197, 94, 0.58)",
+        "important"
+      );
+      element.style.setProperty(
+        "outline",
+        "2px solid rgba(34, 197, 94, 0.58)",
+        "important"
+      );
+      element.style.setProperty("outline-offset", "2px", "important");
+      element.style.setProperty(
+        "filter",
+        "drop-shadow(0 0 12px rgba(34, 197, 94, 0.42))",
+        "important"
+      );
+
+      if (typeof element.animate === "function") {
+        highlightAnimation = element.animate(
+          [
+            {
+              transform: "scale(1)",
+              boxShadow:
+                "0 0 0 2px rgba(34, 197, 94, 0.82), 0 0 14px rgba(34, 197, 94, 0.44)"
+            },
+            {
+              transform: "scale(1.06)",
+              boxShadow:
+                "0 0 0 10px rgba(34, 197, 94, 0), 0 0 26px rgba(34, 197, 94, 0.78)"
+            },
+            {
+              transform: "scale(1)",
+              boxShadow:
+                "0 0 0 2px rgba(34, 197, 94, 0.82), 0 0 14px rgba(34, 197, 94, 0.44)"
+            }
+          ],
+          {
+            duration: 1400,
+            iterations: Number.POSITIVE_INFINITY,
+            easing: "ease-in-out"
+          }
+        );
+      } else {
+        element.style.setProperty(
+          "animation",
+          "eco-pulse 1.5s infinite",
+          "important"
+        );
+      }
+
+      highlightedElement = element;
+    };
+
+    const restoreHighlightStyles = (element: HTMLElement) => {
+      highlightAnimation?.cancel();
+      highlightAnimation = null;
+      element.classList.remove("eco-tutorial-highlight");
+      highlightProps.forEach((prop) => {
+        const previous = originalStyles[prop];
+        if (!previous || !previous.value) {
+          element.style.removeProperty(prop);
+          return;
+        }
+        element.style.setProperty(prop, previous.value, previous.priority);
+      });
+    };
+
+    const openCompressionMenu = () => {
+      if (menuOpened) return;
+      menuOpened = true;
+      window.dispatchEvent(new CustomEvent(TUTORIAL_DROPDOWN_OPEN_EVENT));
+    };
+
+    const syncHighlight = () => {
+      const candidate = findInjectedActionButton(targetId);
+      if (!candidate) return;
+      if (candidate !== target) {
+        if (highlightedElement) {
+          restoreHighlightStyles(highlightedElement);
+          highlightedElement = null;
+        }
+        target = candidate;
+        applyHighlightStyles(candidate);
+      }
+
+      openCompressionMenu();
+    };
+
+    const observer = new MutationObserver(() => syncHighlight());
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    syncHighlight();
+
+    return () => {
+      observer.disconnect();
+      if (highlightedElement) {
+        restoreHighlightStyles(highlightedElement);
+      }
+      window.dispatchEvent(new CustomEvent(TUTORIAL_DROPDOWN_CLOSE_EVENT));
+    };
+  }, [isCompressionLevelStep]);
 
   const getComparisonAnchor = (): HTMLElement | null => {
     const compressButton = findInjectedActionButton("eco-compress-btn");
@@ -1334,6 +1477,8 @@ export default function TutorialOverlay() {
             ? "eco-tutorial-card-compress-step"
             : isCompareResultsStep
               ? "eco-tutorial-card-compare-step"
+              : isCompressionLevelStep
+                ? "eco-tutorial-card-compression-level-step"
               : ""
         }`}
       >
@@ -1375,7 +1520,7 @@ export default function TutorialOverlay() {
             className="eco-tutorial-btn eco-tutorial-btn-secondary"
             onClick={dismissTutorial}
           >
-            Skip
+            End Tutorial
           </button>
         </div>
       </div>

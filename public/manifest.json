@@ -1,5 +1,5 @@
 {
-  "name": "sustAIn",
+  "name": "SustAIn",
   "version": "1.0.0",
   "manifest_version": 3,
   "permissions": ["storage", "activeTab", "scripting", "offscreen"],

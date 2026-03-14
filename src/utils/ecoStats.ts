@@ -48,7 +48,7 @@ export function countPromptTokens(text: string): number {
     return encode(text).length;
   } catch (error) {
     // Keep extension behavior resilient on unexpected editor artifacts.
-    console.warn("sustAIn: tokenization failed, using char fallback", error);
+    console.warn("SustAIn: tokenization failed, using char fallback", error);
     return Math.ceil(text.length / 4);
   }
 }
