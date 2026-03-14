@@ -262,7 +262,7 @@ function App() {
         <footer className="mt-5 border-t border-white/10 pt-4 text-xs text-white/60">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-white/50" />
-            <span>lalitbatchu@gmail.com</span>
+            <span>usesustain@gmail.com</span>
           </div>
         </footer>
       </div>

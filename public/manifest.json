@@ -2,21 +2,9 @@
   "name": "SustAIn",
   "version": "1.0.0",
   "manifest_version": 3,
-  "permissions": ["storage", "activeTab", "scripting", "offscreen"],
+  "permissions": ["storage", "offscreen"],
   "host_permissions": [
-    "https://*.workers.dev/*",
-    "https://hf.co/*",
-    "https://*.hf.co/*",
-    "https://huggingface.co/*",
-    "https://*.huggingface.co/*",
-    "https://cdn-lfs.huggingface.co/*",
-    "https://cdn.jsdelivr.net/*",
-    "https://claude.ai/*",
-    "https://grok.com/*",
-    "https://copilot.microsoft.com/*",
-    "https://chat.deepseek.com/*",
-    "https://perplexity.ai/*",
-    "https://www.perplexity.ai/*"
+    "https://*.workers.dev/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
